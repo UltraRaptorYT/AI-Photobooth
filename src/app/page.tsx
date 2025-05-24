@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { useRef, useEffect, useState, useCallback } from "react";
 import Webcam from "react-webcam";
-import Image from "next/image";
 
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
