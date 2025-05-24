@@ -30,9 +30,9 @@ export default function Gallery() {
 
   return (
     <div className="grow w-full flex flex-col justify-around p-12">
-      <Marquee images={images} speed={100} moveTowards="left" />
-      <Marquee images={images} speed={100} moveTowards="right" />
-      <Marquee images={images} speed={100} moveTowards="left" />
+      <Marquee images={images} speed={75} moveTowards="left" />
+      <Marquee images={images} speed={75} moveTowards="right" />
+      <Marquee images={images} speed={75} moveTowards="left" />
     </div>
   );
 }
