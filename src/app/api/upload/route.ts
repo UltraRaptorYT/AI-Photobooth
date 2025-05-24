@@ -1,4 +1,4 @@
-import supabase from "@/lib/supabase";
+// import supabase from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing data" }, { status: 400 });
     }
 
-    
+
   } catch (error) {
     console.error("Error in upload POST:", error);
     return NextResponse.json(
