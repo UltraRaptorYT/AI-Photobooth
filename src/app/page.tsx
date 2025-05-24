@@ -9,6 +9,7 @@ export default function Home() {
   const webcamRef = useRef<Webcam>(null);
   const selectionRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const costumes = [
     { label: "Wizard", value: "wizard", img: "/costumes/wizard.png" },
@@ -49,13 +50,17 @@ export default function Home() {
   }, [capture, capturedImage]);
 
   const generate = async () => {
-    if (!capturedImage) return;
-    const result = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        base64Image: capturedImage.split(",")[1],
-        prompt: `
+    if (!capturedImage || isGenerating) return;
+
+    setIsGenerating(true);
+
+    try {
+      const result = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          base64Image: capturedImage.split(",")[1],
+          prompt: `
         You are an AI image generation assistant tasked with modifying existing images by adding costumes to people in the image. Your goal is to seamlessly integrate the specified costume onto the individuals in the image without altering the original composition or regenerating the entire image.
 
         First, carefully analyze the existing image. Take note of:
@@ -85,14 +90,20 @@ export default function Home() {
 
         Your final output should be the modified image with the costume added to the person or people, maintaining the overall quality and coherence of the original image. Do not include any explanatory text or additional images in your response.
       `,
-      }),
-    });
-    const json = await result.json();
-    if (json.base64) {
-      setAiImage(`data:image/png;base64,${json.base64}`);
-      setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 300);
+        }),
+      });
+      const json = await result.json();
+      if (json.base64) {
+        setAiImage(`data:image/png;base64,${json.base64}`);
+        setTimeout(() => {
+          resultRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 300);
+      }
+    } catch (error) {
+      console.error("Generation failed:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -112,7 +123,7 @@ export default function Home() {
           ref={webcamRef}
           screenshotFormat="image/png"
           videoConstraints={{ width: 1280, height: 720 }}
-          className="mx-auto rounded-lg p-12 w-9xl"
+          className="mx-auto rounded-lg px-12 w-9xl"
         />
         <Button onClick={capture} className="mt-4" variant={"destructive"}>
           Capture Photo
@@ -132,8 +143,8 @@ export default function Home() {
               alt="Captured"
               className="border max-w-full mx-auto"
             />
-            <div>
-              <h3>Costume</h3>
+            <div className="flex flex-col items-center justify-center">
+              <h3 className="mr-auto">Costume</h3>
               <div className="space-y-4 w-full">
                 <div className="flex space-x-4 overflow-x-auto pb-2">
                   {costumes.map((item) => (
@@ -171,8 +182,12 @@ export default function Home() {
               </div>
 
               <div className="text-center mt-6">
-                <Button onClick={generate} disabled={!costume} size={"lg"}>
-                  Generate AI Photo
+                <Button
+                  onClick={generate}
+                  disabled={!costume || isGenerating}
+                  size="lg"
+                >
+                  {isGenerating ? "Generating..." : "Generate AI Photo"}
                 </Button>
               </div>
             </div>
@@ -187,7 +202,7 @@ export default function Home() {
           className="min-h-screen flex flex-col justify-center items-center text-center"
         >
           <h2 className="text-xl font-bold mb-4">Your AI Photo</h2>
-          <img src={aiImage} className="mx-auto border rounded max-w-full" />
+          <img src={aiImage} className="mx-auto border rounded w-9xl" />
           <div className="mt-6">
             <Button onClick={reset}>Try Again</Button>
           </div>
