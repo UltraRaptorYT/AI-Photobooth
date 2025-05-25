@@ -12,7 +12,7 @@ export default function StarRating({
           key={star}
           type="button"
           onClick={() => setRating(star)}
-          className={`text-5xl ${
+          className={`text-4xl ${
             rating && star <= rating ? "text-yellow-400" : "text-gray-400"
           } hover:scale-110 transition`}
         >
