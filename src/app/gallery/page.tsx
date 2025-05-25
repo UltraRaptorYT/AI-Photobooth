@@ -26,7 +26,7 @@ export default function Gallery() {
 
     // Repeat if needed for Marquee
     const minPerMarquee = 6;
-    let filledImages = [...validUrls];
+    const filledImages = [...validUrls];
     while (filledImages.length < minPerMarquee * 3) {
       filledImages.push(...validUrls);
     }
@@ -47,7 +47,7 @@ export default function Gallery() {
           schema: "public",
           table: "aipb_images",
         },
-        (payload) => {
+        () => {
           getEditedImages();
         }
       )
@@ -56,7 +56,7 @@ export default function Gallery() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [getEditedImages]);
 
   // 🔄 Split into per-marquee chunks
   const getMarqueeImages = (startIndex: number): string[] => {
