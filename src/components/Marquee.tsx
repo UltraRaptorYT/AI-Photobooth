@@ -1,8 +1,8 @@
-// components/Marquee.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface MarqueeProps {
   images: string[];
@@ -16,6 +16,7 @@ export default function Marquee({
   moveTowards = "left",
 }: MarqueeProps) {
   const marqueeRef = useRef<HTMLDivElement>(null);
+  const marqueeImgSize = 450;
 
   useEffect(() => {
     const marquee = marqueeRef.current;
@@ -23,19 +24,21 @@ export default function Marquee({
 
     const animationName =
       moveTowards === "right" ? "marquee-right" : "marquee-left";
-
-    const duration = images.length * (300 / speed); // Adjusted multiplier
+    const duration = images.length * (marqueeImgSize / speed); // You can tweak this multiplier for better results
 
     marquee.style.animation = `${animationName} ${duration}s linear infinite`;
   }, [images, speed, moveTowards]);
 
   return (
     <div className="overflow-hidden w-full">
-      <div ref={marqueeRef} className={`flex whitespace-nowrap`}>
+      <div
+        ref={marqueeRef}
+        className={`flex w-max animate-marquee whitespace-nowrap`}
+      >
         {[...images, ...images].map((src, index) => (
           <div
             key={`${moveTowards}-${index}`}
-            className="flex-shrink-0 w-full md:w-1/2 lg:w-1/3 p-2"
+            className={cn("flex-shrink-0 p-2", `w-[${marqueeImgSize}px]`)} // or use a fixed width
           >
             <div className="aspect-[16/9] rounded-lg overflow-hidden shadow-lg">
               <Image

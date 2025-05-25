@@ -18,6 +18,7 @@ const getMarqueeImages = (images: string[], startIndex: number): string[] => {
 };
 
 export default function Gallery() {
+  const marqueeSpeed = 75; // Higher Faster
   const [images, setImages] = useState<string[]>([]);
   const supabaseImageURL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ai-pb`;
 
@@ -25,7 +26,7 @@ export default function Gallery() {
     const { data, error } = await supabase
       .from("aipb_images")
       .select("edited_image")
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false });
 
     if (error || !data) {
       console.error("Supabase DB Error:", error);
@@ -37,10 +38,20 @@ export default function Gallery() {
       .filter((url): url is string => !!url)
       .map((url) => `${supabaseImageURL}/${url}`);
 
+    const latest = validUrls.slice(0, 6);
+    const rest = validUrls.slice(6);
+
+    for (let i = rest.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rest[i], rest[j]] = [rest[j], rest[i]];
+    }
+
+    const finalList = [...latest, ...rest];
+
     const minPerMarquee = 6;
-    const filledImages = [...validUrls];
+    const filledImages = [...finalList];
     while (filledImages.length < minPerMarquee * 3) {
-      filledImages.push(...validUrls);
+      filledImages.push(...finalList);
     }
 
     setImages(filledImages);
@@ -75,19 +86,19 @@ export default function Gallery() {
       <Marquee
         key={`marquee1-${images[0]}`}
         images={getMarqueeImages(images, 0)}
-        speed={75}
+        speed={marqueeSpeed}
         moveTowards="left"
       />
       <Marquee
         key={`marquee2-${images[0]}`}
         images={getMarqueeImages(images, 6)}
-        speed={75}
+        speed={marqueeSpeed}
         moveTowards="right"
       />
       <Marquee
         key={`marquee3-${images[0]}`}
         images={getMarqueeImages(images, 12)}
-        speed={75}
+        speed={marqueeSpeed}
         moveTowards="left"
       />
     </div>
