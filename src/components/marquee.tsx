@@ -34,13 +34,13 @@ export default function Marquee({
         {[...images, ...images].map((src, index) => (
           <div
             key={`${moveTowards}-${index}`}
-            className="flex-shrink-0 w-1/3 md:w-1/4 lg:w-1/5 p-2"
+            className="flex-shrink-0 w-full md:w-1/2 lg:w-1/3 p-2"
           >
-            <div className="aspect-[4/3] rounded-lg overflow-hidden shadow-lg">
+            <div className="aspect-[16/9] rounded-lg overflow-hidden shadow-lg">
               <img
                 src={src}
                 alt={`Gallery image ${index + 1}`}
-                className="w-full h-full object-cover transition-transform duration-300"
+                className="w-full h-full object-cover object-center transition-transform duration-300"
               />
             </div>
           </div>

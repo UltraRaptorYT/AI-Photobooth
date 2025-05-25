@@ -1,5 +1,7 @@
 "use client";
 
+import supabase from "@/lib/supabase";
+import { uploadBase64ToSupabase } from "@/lib/uploadBase64";
 import { Button } from "@/components/ui/button";
 import { useRef, useEffect, useState, useCallback } from "react";
 import Webcam from "react-webcam";
@@ -23,11 +25,31 @@ export default function Home() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [aiImage, setAiImage] = useState<string | null>(null);
   const [costume, setCostume] = useState("");
+  const [imageId, setImageId] = useState<string | null>(null);
 
-  const capture = useCallback(() => {
+  const capture = useCallback(async () => {
     const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
       setCapturedImage(imageSrc);
+
+      const filename = `${crypto.randomUUID()}.png`;
+      const originalPath = `original/${filename}`;
+
+      await uploadBase64ToSupabase(imageSrc, originalPath);
+
+      const { data, error } = await supabase
+        .from("aipb_images")
+        .insert({ original_image: originalPath })
+        .select("id");
+
+      if (error || !data) {
+        console.error("DB insert error:", error);
+        alert("Failed to save image metadata");
+        return;
+      }
+
+      setImageId(data[0].id);
+
       setAiImage("");
       setCostume("");
       setTimeout(() => {
@@ -52,6 +74,7 @@ export default function Home() {
     if (!capturedImage || isGenerating) return;
 
     setIsGenerating(true);
+    setAiImage("");
 
     try {
       const result = await fetch("/api/generate", {
@@ -93,6 +116,19 @@ export default function Home() {
       });
       const json = await result.json();
       if (json.base64) {
+        const editedFilename = `${imageId}.png`;
+        const editedPath = `edited/${editedFilename}`;
+
+        await uploadBase64ToSupabase(
+          `data:image/png;base64,${json.base64}`,
+          editedPath
+        );
+
+        await supabase
+          .from("aipb_images")
+          .update({ edited_image: editedPath })
+          .eq("id", imageId);
+
         setAiImage(`data:image/png;base64,${json.base64}`);
         setTimeout(() => {
           resultRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -174,6 +210,7 @@ export default function Home() {
                     type="text"
                     value={costume}
                     onChange={(e) => setCostume(e.target.value)}
+                    disabled={isGenerating}
                     placeholder="e.g. pirate with rainbow cape"
                     className="border rounded p-2 w-full max-w-md"
                   />
