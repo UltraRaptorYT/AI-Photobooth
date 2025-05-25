@@ -1,6 +1,6 @@
 "use client";
 
-import Marquee from "@/components/marqueeTemp";
+import Marquee from "@/components/Marquee";
 import { useEffect, useState, useCallback } from "react";
 import supabase from "@/lib/supabase";
 

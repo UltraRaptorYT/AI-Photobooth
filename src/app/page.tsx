@@ -7,6 +7,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import Webcam from "react-webcam";
 import Image from "next/image";
 import CostumeSelector from "@/components/CostumeSelector";
+import { toast } from "sonner";
 
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
@@ -81,10 +82,12 @@ export default function Home() {
 
     setIsGenerating(true);
     setAiImage("");
+
     const prompt = generatePrompt(accessories);
     console.log(prompt);
+
     try {
-      const result = await fetch("/api/generate", {
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,27 +95,40 @@ export default function Home() {
           prompt: prompt,
         }),
       });
-      const json = await result.json();
-      if (json.base64) {
-        const editedFilename = `${imageId}.png`;
-        const editedPath = `edited/${editedFilename}`;
 
-        await uploadBase64ToSupabase(
-          `data:image/png;base64,${json.base64}`,
-          editedPath
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Non-200 response from /api/generate:", errorData);
+        throw new Error(
+          errorData?.error?.message ||
+            `AI generation failed: ${response.status}`
         );
-
-        await supabase
-          .from("aipb_images")
-          .update({ edited_image: editedPath })
-          .eq("id", imageId);
-
-        setAiImage(`data:image/png;base64,${json.base64}`);
-        setStep(2);
       }
+
+      const json = await response.json();
+
+      if (!json.base64) {
+        throw new Error("No base64 image returned from generation.");
+      }
+
+      const editedFilename = `${imageId}.png`;
+      const editedPath = `edited/${editedFilename}`;
+
+      await uploadBase64ToSupabase(
+        `data:image/png;base64,${json.base64}`,
+        editedPath
+      );
+
+      await supabase
+        .from("aipb_images")
+        .update({ edited_image: editedPath })
+        .eq("id", imageId);
+
+      setAiImage(`data:image/png;base64,${json.base64}`);
+      setStep(2);
     } catch (error) {
       console.error("Generation failed:", error);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsGenerating(false);
     }
