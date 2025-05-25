@@ -131,14 +131,6 @@ body {
   background-size: 30%;
 }
 
-body::before {
-  content: "";
-  position: absolute;
-  inset: 0; /* shorthand for top: 0; bottom: 0; left: 0; right: 0; */
-  background-color: rgba(0, 0, 0, 0.5); /* Adjust color & opacity */
-  z-index: 1;
-}
-
 body > * {
   position: relative;
   z-index: 2;

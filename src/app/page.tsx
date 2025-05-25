@@ -6,26 +6,18 @@ import { Button } from "@/components/ui/button";
 import { useRef, useEffect, useState, useCallback } from "react";
 import Webcam from "react-webcam";
 import Image from "next/image";
+import CostumeSelector from "@/components/CostumeSelector";
 
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
   const selectionRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const costumes = [
-    { label: "Wizard", value: "wizard", img: "/costumes/wizard.png" },
-    { label: "Astronaut", value: "astronaut", img: "/costumes/astronaut.png" },
-    { label: "Ninja", value: "ninja", img: "/costumes/ninja.png" },
-    { label: "Cow Suit", value: "cow suit", img: "/costumes/cow.png" },
-    { label: "Pilot", value: "pilot", img: "/costumes/pilot.png" },
-    { label: "Cat Suit", value: "cat suit", img: "/costumes/cat.png" },
-    { label: "Maid", value: "maid", img: "/costumes/maid.png" },
-  ];
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
 
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [aiImage, setAiImage] = useState<string | null>(null);
-  const [costume, setCostume] = useState("");
+  const [accessories, setAccessories] = useState("");
   const [imageId, setImageId] = useState<string | null>(null);
 
   const capture = useCallback(async () => {
@@ -50,20 +42,29 @@ export default function Home() {
       }
 
       setImageId(data[0].id);
-
+      setStep(1);
       setAiImage("");
-      setCostume("");
+      setAccessories("");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (step == 1) {
       setTimeout(() => {
         selectionRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 300);
+    } else if (step == 2) {
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
     }
-  }, []);
+  }, [step]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code.startsWith("Control")) {
         event.preventDefault(); // Prevent page scroll on spacebar
-        capture();
+        // capture();
       }
     };
 
@@ -71,48 +72,24 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [capture, capturedImage]);
 
+  function generatePrompt(tags: string): string {
+    return `Enhance this real photograph by realistically adding ${tags} to the person in the image. Do not change the person's face or turn them into a cartoon. Keep the facial features photorealistic and untouched. Do not alter the background or lighting. Only add accessories or effects around the head, shoulders, or body, and ensure the image remains in a 16:9 ratio.`;
+  }
+
   const generate = async () => {
     if (!capturedImage || isGenerating) return;
 
     setIsGenerating(true);
     setAiImage("");
-
+    const prompt = generatePrompt(accessories);
+    console.log(prompt);
     try {
       const result = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           base64Image: capturedImage.split(",")[1],
-          prompt: `
-        You are an AI image generation assistant tasked with modifying existing images by adding costumes to people in the image. Your goal is to seamlessly integrate the specified costume onto the individuals in the image without altering the original composition or regenerating the entire image.
-
-        First, carefully analyze the existing image. Take note of:
-        - The number of people in the image
-        - Their positions, poses, and proportions
-        - The lighting and color scheme of the original image
-        - The overall style and mood of the scene
-
-        Now, you will add the following costume to the person or people in the image:
-
-        <costume_description>
-        ${costume}
-        </costume_description>
-
-        When incorporating the costume:
-        - Adapt the costume to fit each person's body shape and pose
-        - Ensure the costume looks natural and properly fitted
-        - Maintain consistency with the original image's lighting and color palette
-        - Preserve facial features and expressions of the individuals
-
-        Important considerations:
-        - Do not change the background or any other elements of the original image
-        - Maintain the original image's resolution and aspect ratio
-        - Ensure the added costume elements blend seamlessly with the existing image
-
-        If the costume description is vague or incomplete, use your best judgment to create a cohesive and appropriate costume based on the available information and the context of the original image.
-
-        Your final output should be the modified image with the costume added to the person or people, maintaining the overall quality and coherence of the original image. Do not include any explanatory text or additional images in your response.
-      `,
+          prompt: prompt,
         }),
       });
       const json = await result.json();
@@ -131,9 +108,7 @@ export default function Home() {
           .eq("id", imageId);
 
         setAiImage(`data:image/png;base64,${json.base64}`);
-        setTimeout(() => {
-          resultRef.current?.scrollIntoView({ behavior: "smooth" });
-        }, 300);
+        setStep(2);
       }
     } catch (error) {
       console.error("Generation failed:", error);
@@ -143,11 +118,12 @@ export default function Home() {
     }
   };
 
-  const reset = () => {
-    setCapturedImage(null);
-    setAiImage(null);
-    setCostume("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const tryAgainFunc = () => {
+    setAccessories("");
+    setStep(1);
+    setTimeout(() => {
+      setAiImage(null);
+    }, 500);
   };
 
   return (
@@ -172,7 +148,9 @@ export default function Home() {
           ref={selectionRef}
           className="min-h-screen flex flex-col justify-center items-center"
         >
-          <h2 className="text-xl font-bold mb-4 text-center">Choose Costume</h2>
+          <h2 className="text-xl font-bold mb-4 text-center">
+            Pick Your Look!
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-12 mx-auto">
             <img
               src={capturedImage}
@@ -180,15 +158,14 @@ export default function Home() {
               className="border max-w-full mx-auto"
             />
             <div className="flex flex-col items-center justify-center">
-              <h3 className="mr-auto">Costume</h3>
-              <div className="space-y-4 w-full">
+              {/* <div className="space-y-4 w-full">
                 <div className="flex space-x-4 overflow-x-auto pb-2">
-                  {costumes.map((item) => (
+                  {accessoriesList.map((item) => (
                     <div
                       key={item.value}
-                      onClick={() => setCostume(item.value)}
+                      onClick={() => setAccessories(item.value)}
                       className={`min-w-[120px] flex-shrink-0 cursor-pointer border-2 rounded-lg p-2 text-center transition-all ${
-                        costume === item.value
+                        accessories === item.value
                           ? "border-blue-500"
                           : "border-gray-300"
                       }`}
@@ -207,23 +184,27 @@ export default function Home() {
 
                 <div className="text-center w-full">
                   <p className="text-sm text-gray-500 mb-1">
-                    Or type your own costume idea:
+                    Or type your own Accessories idea:
                   </p>
                   <input
                     type="text"
-                    value={costume}
-                    onChange={(e) => setCostume(e.target.value)}
+                    value={accessories}
+                    onChange={(e) => setAccessories(e.target.value)}
                     disabled={isGenerating}
                     placeholder="e.g. pirate with rainbow cape"
                     className="border rounded p-2 w-full max-w-md"
                   />
                 </div>
-              </div>
+              </div> */}
+              <CostumeSelector
+                onUpdatePrompt={(value) => setAccessories(value)}
+                disabled={isGenerating}
+              />
 
               <div className="text-center mt-6">
                 <Button
                   onClick={generate}
-                  disabled={!costume || isGenerating}
+                  disabled={!accessories || isGenerating}
                   size="lg"
                 >
                   {isGenerating ? "Generating..." : "Generate AI Photo"}
@@ -244,10 +225,10 @@ export default function Home() {
           <img
             alt="AI Edited Image"
             src={aiImage}
-            className="mx-auto border rounded w-9xl"
+            className="mx-auto border rounded aspect-video w-9xl object-contain"
           />
           <div className="mt-6">
-            <Button onClick={reset}>Try Again</Button>
+            <Button onClick={tryAgainFunc}>Try Again</Button>
           </div>
         </section>
       )}

@@ -1,6 +1,6 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 import { NextResponse } from "next/server";
-import { Buffer } from "buffer";
+// import { Buffer } from "buffer";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -18,27 +18,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing data" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(base64Image, "base64");
-    const blob = new Blob([buffer], { type: "image/png" });
+    // const buffer = Buffer.from(base64Image, "base64");
+    // const blob = new Blob([buffer], { type: "image/png" });
 
-    const file = await ai.files.upload({
-      file: blob,
-    });
+    // const file = await ai.files.upload({
+    //   file: blob,
+    // });
+
+    const contents = [
+      {
+        role: "user",
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: "image/png",
+              data: base64Image,
+            },
+          },
+        ],
+      },
+    ];
 
     const response = await ai.models.generateContentStream({
       model: "gemini-2.0-flash-preview-image-generation",
       config: {
-        responseModalities: ["IMAGE", "TEXT"], // ✅ FIXED
+        responseModalities: [Modality.TEXT, Modality.IMAGE],
       },
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { fileData: { fileUri: file.uri, mimeType: file.mimeType } },
-            { text: prompt },
-          ],
-        },
-      ],
+      contents: contents,
     });
 
     for await (const chunk of response) {
