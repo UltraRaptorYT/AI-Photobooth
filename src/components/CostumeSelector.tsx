@@ -37,7 +37,6 @@ const SUGGESTIONS = [
   "Lightning Sparks",
   "Magical Glow",
   "Floating Emoji Hearts",
-  "Glitch Aura",
   "Bubble Effects",
   "Rainbow Trail",
   "Cyberpunk Glow",
