@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import supabase from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
+import StarRating from "@/components/StarRating";
 
-export default function Feedback() {
+export default function Download() {
+  const bottomRef = useRef<HTMLDivElement | null>(null);
   const params = useSearchParams();
   const imageId = params.get("imageId");
 
+  const [rating, setRating] = useState<number | null>(null);
   const [email, setEmail] = useState("");
-  const [subscribe, setSubscribe] = useState(false);
+  const [subscribe, setSubscribe] = useState(true);
   const [originalUrl, setOriginalUrl] = useState<string | null>(null);
   const [editedUrl, setEditedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,9 +51,22 @@ export default function Feedback() {
     fetchImagePaths();
   }, [imageId]);
 
+  useEffect(() => {
+    if (hasSubmitted && bottomRef.current) {
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+    }
+  }, [hasSubmitted]);
+
   const handleSubmit = async () => {
     if (!email) {
       toast.error("Please enter your email.");
+      return;
+    }
+
+    if (!rating) {
+      toast.error("Please leave a rating.");
       return;
     }
 
@@ -58,6 +74,7 @@ export default function Feedback() {
       email,
       subscribed: subscribe,
       image_id: imageId,
+      rating: rating,
     });
 
     if (error) {
@@ -81,9 +98,18 @@ export default function Feedback() {
         updates.
       </p>
 
-      <div className="space-y-4 max-w-sm mx-auto text-left">
+      <div className="space-y-6 max-w-sm mx-auto text-left">
         <div className="grid w-full items-center gap-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label className="block text-base text-left">
+            Rate your AI photo
+          </Label>
+          <StarRating rating={rating} setRating={setRating} />
+        </div>
+
+        <div className="grid w-full items-center gap-1.5">
+          <Label htmlFor="email" className="text-base">
+            Email
+          </Label>
           <Input
             placeholder="Enter your email..."
             value={email}
@@ -107,7 +133,7 @@ export default function Feedback() {
       </div>
 
       {hasSubmitted && !loading && (
-        <div className="mt-12 space-y-6">
+        <div ref={bottomRef} className="mt-12 space-y-6">
           <h2 className="text-2xl font-semibold">Download Your Images</h2>
 
           <div className="flex flex-col lg:flex-row gap-8 justify-center items-center">

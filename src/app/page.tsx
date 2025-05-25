@@ -246,13 +246,13 @@ export default function Home() {
                 </p>
               </div>
               <a
-                href={`${process.env.NEXT_PUBLIC_BASE_URL}/feedback?imageId=${imageId}`}
+                href={`${process.env.NEXT_PUBLIC_BASE_URL}/download?imageId=${imageId}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <Image
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${process.env.NEXT_PUBLIC_BASE_URL}/feedback?imageId=${imageId}`}
-                  alt={`QR Code - ${process.env.NEXT_PUBLIC_BASE_URL}/feedback?imageId=${imageId}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${process.env.NEXT_PUBLIC_BASE_URL}/download?imageId=${imageId}`}
+                  alt={`QR Code - ${process.env.NEXT_PUBLIC_BASE_URL}/download?imageId=${imageId}`}
                   width={300}
                   height={300}
                 />
