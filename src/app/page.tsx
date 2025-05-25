@@ -5,6 +5,7 @@ import { uploadBase64ToSupabase } from "@/lib/uploadBase64";
 import { Button } from "@/components/ui/button";
 import { useRef, useEffect, useState, useCallback } from "react";
 import Webcam from "react-webcam";
+import Image from "next/image";
 
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
@@ -192,7 +193,9 @@ export default function Home() {
                           : "border-gray-300"
                       }`}
                     >
-                      <img
+                      <Image
+                        width={100}
+                        height={100}
                         src={item.img}
                         alt={item.label}
                         className="w-20 h-20 object-contain mx-auto mb-2"
@@ -238,7 +241,11 @@ export default function Home() {
           className="min-h-screen flex flex-col justify-center items-center text-center"
         >
           <h2 className="text-xl font-bold mb-4">Your AI Photo</h2>
-          <img src={aiImage} className="mx-auto border rounded w-9xl" />
+          <img
+            alt="AI Edited Image"
+            src={aiImage}
+            className="mx-auto border rounded w-9xl"
+          />
           <div className="mt-6">
             <Button onClick={reset}>Try Again</Button>
           </div>
