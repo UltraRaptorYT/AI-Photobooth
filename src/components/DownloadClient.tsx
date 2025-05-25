@@ -87,6 +87,25 @@ export default function DownloadClient() {
     setHasSubmitted(true);
   };
 
+  const triggerDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      toast.error("Download failed.");
+      console.error("Download error:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen p-6 md:p-12 max-w-5xl mx-auto space-y-10 text-center">
       <h1 className="text-3xl font-bold leading-snug">
@@ -146,10 +165,11 @@ export default function DownloadClient() {
                   height={180}
                   className="rounded-lg border"
                 />
-                <Button asChild>
-                  <a href={originalUrl} download>
-                    Download Original
-                  </a>
+                <Button
+                  className="w-full max-w-[200px]"
+                  onClick={() => triggerDownload(originalUrl!, "original.png")}
+                >
+                  Download Original
                 </Button>
               </div>
             )}
@@ -163,10 +183,11 @@ export default function DownloadClient() {
                   height={180}
                   className="rounded-lg border"
                 />
-                <Button asChild>
-                  <a href={editedUrl} download>
-                    Download AI-Edited
-                  </a>
+                <Button
+                  className="w-full max-w-[200px]"
+                  onClick={() => triggerDownload(editedUrl!, "edited.png")}
+                >
+                  Download AI Edited
                 </Button>
               </div>
             )}
