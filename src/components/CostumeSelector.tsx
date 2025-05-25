@@ -19,8 +19,6 @@ const SUGGESTIONS = [
 
   // New additions
   "Flower Crown",
-  "Devil Horns",
-  "Angel Halo",
   "Bunny Ears",
   "Deer Antlers",
   "Top Hat",
@@ -30,7 +28,7 @@ const SUGGESTIONS = [
   "Sunglasses",
   "Eye Patch",
   "Bow Tie",
-  "Scarf",
+  "Confetti Burst",
   "Cape",
   "Armor Chestplate",
   "Butterfly Swarm",
@@ -44,8 +42,8 @@ const SUGGESTIONS = [
   "Rainbow Trail",
   "Cyberpunk Glow",
   "Nature Vines",
-  "Snowflakes and Earmuffs",
   "Disco Lights",
+  "Gaming Headset",
 ];
 
 const getRandomSelections = (count: number) => {

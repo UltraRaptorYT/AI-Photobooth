@@ -5,9 +5,9 @@ import { uploadBase64ToSupabase } from "@/lib/uploadBase64";
 import { Button } from "@/components/ui/button";
 import { useRef, useEffect, useState, useCallback } from "react";
 import Webcam from "react-webcam";
-import Image from "next/image";
 import CostumeSelector from "@/components/CostumeSelector";
 import { toast } from "sonner";
+import Image from "next/image";
 
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
@@ -64,7 +64,7 @@ export default function Home() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code.startsWith("Control")) {
-        event.preventDefault(); // Prevent page scroll on spacebar
+        event.preventDefault();
         // capture();
       }
     };
@@ -74,7 +74,7 @@ export default function Home() {
   }, [capture, capturedImage]);
 
   function generatePrompt(tags: string): string {
-    return `Enhance this real photograph by realistically adding ${tags} to the person in the image. Do not change the person's face or turn them into a cartoon. Keep the facial features photorealistic and untouched. Do not alter the background or lighting. Only add accessories or effects around the head, shoulders, or body, and ensure the image remains in a 16:9 ratio.`;
+    return `Enhance this real photograph by realistically adding ${tags} to the people in the image. Do not turn anyone into a cartoon or drawing. Keep all faces photorealistic, clearly visible, and unaltered. Do not change the background or lighting. Only add accessories or visual effects around the heads, shoulders, or bodies of each person, and ensure the composition remains in a 16:9 ratio. The image should retain its natural realism and original environment.`;
   }
 
   const generate = async () => {
@@ -86,12 +86,32 @@ export default function Home() {
     const prompt = generatePrompt(accessories);
     console.log(prompt);
 
+    async function toBase64(fileOrBlob: Blob): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(fileOrBlob);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+    }
+
+    let base64Image: string;
+
+    if (capturedImage.startsWith("data:image/")) {
+      base64Image = capturedImage.split(",")[1];
+    } else {
+      const res = await fetch(capturedImage);
+      const blob = await res.blob();
+      const fullBase64 = await toBase64(blob);
+      base64Image = fullBase64.split(",")[1];
+    }
+
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          base64Image: capturedImage.split(",")[1],
+          base64Image: base64Image,
           prompt: prompt,
         }),
       });
@@ -126,6 +146,9 @@ export default function Home() {
 
       setAiImage(`data:image/png;base64,${json.base64}`);
       setStep(2);
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
     } catch (error) {
       console.error("Generation failed:", error);
       toast.error("Something went wrong. Please try again.");
@@ -140,6 +163,13 @@ export default function Home() {
     setTimeout(() => {
       setAiImage(null);
     }, 500);
+  };
+
+  const resetFunc = () => {
+    setAiImage(null);
+    setCapturedImage(null);
+    setAccessories("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -174,44 +204,6 @@ export default function Home() {
               className="border max-w-full mx-auto"
             />
             <div className="flex flex-col items-center justify-center">
-              {/* <div className="space-y-4 w-full">
-                <div className="flex space-x-4 overflow-x-auto pb-2">
-                  {accessoriesList.map((item) => (
-                    <div
-                      key={item.value}
-                      onClick={() => setAccessories(item.value)}
-                      className={`min-w-[120px] flex-shrink-0 cursor-pointer border-2 rounded-lg p-2 text-center transition-all ${
-                        accessories === item.value
-                          ? "border-blue-500"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      <Image
-                        width={100}
-                        height={100}
-                        src={item.img}
-                        alt={item.label}
-                        className="w-20 h-20 object-contain mx-auto mb-2"
-                      />
-                      <span className="font-medium text-sm">{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="text-center w-full">
-                  <p className="text-sm text-gray-500 mb-1">
-                    Or type your own Accessories idea:
-                  </p>
-                  <input
-                    type="text"
-                    value={accessories}
-                    onChange={(e) => setAccessories(e.target.value)}
-                    disabled={isGenerating}
-                    placeholder="e.g. pirate with rainbow cape"
-                    className="border rounded p-2 w-full max-w-md"
-                  />
-                </div>
-              </div> */}
               <CostumeSelector
                 onUpdatePrompt={(value) => setAccessories(value)}
                 disabled={isGenerating}
@@ -237,14 +229,36 @@ export default function Home() {
           ref={resultRef}
           className="min-h-screen flex flex-col justify-center items-center text-center"
         >
-          <h2 className="text-xl font-bold mb-4">Your AI Photo</h2>
-          <img
-            alt="AI Edited Image"
-            src={aiImage}
-            className="mx-auto border rounded aspect-video w-9xl object-contain"
-          />
-          <div className="mt-6">
-            <Button onClick={tryAgainFunc}>Try Again</Button>
+          <h2 className="text-xl font-bold mb-4">Your AI Masterpiece</h2>
+          <div className="flex items-center justify-center gap-12 p-12">
+            <img
+              alt="AI Edited Image"
+              src={aiImage}
+              className="mx-auto border rounded aspect-video w-9xl object-contain"
+            />
+            <div className="flex flex-col items-center justify-center gap-4">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">
+                  🎉 You Look Awesome!
+                </h2>
+                <p className="text-muted-foreground mb-4">
+                  Scan the QR code below to save your masterpiece.
+                </p>
+              </div>
+
+              <Image
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${process.env.NEXT_PUBLIC_BASE_URL}/feedback?imageId=${imageId}`}
+                alt={`QR Code - ${process.env.NEXT_PUBLIC_BASE_URL}/feedback?imageId=${imageId}`}
+                width={300}
+                height={300}
+              />
+            </div>
+          </div>
+          <div className="mt-6 flex gap-6">
+            <Button onClick={tryAgainFunc}>Try a Different Look</Button>
+            <Button onClick={resetFunc} variant={"destructive"}>
+              Retake Photo
+            </Button>
           </div>
         </section>
       )}
