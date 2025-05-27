@@ -8,6 +8,7 @@ import Webcam from "react-webcam";
 import CostumeSelector from "@/components/CostumeSelector";
 import { toast } from "sonner";
 import Image from "next/image";
+import { applyWatermark } from "@/lib/applyWatermark";
 
 export default function Home() {
   const webcamRef = useRef<Webcam>(null);
@@ -15,19 +16,35 @@ export default function Home() {
   const resultRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [captureCooldown, setCaptureCooldown] = useState(false);
 
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [watermarkCapturedImage, setWatermarkCapturedImage] = useState<
+    string | null
+  >(null);
   const [aiImage, setAiImage] = useState<string | null>(null);
+  const [watermarkAiImage, setWatermarkAiImage] = useState<string | null>(null);
   const [accessories, setAccessories] = useState("");
   const [imageId, setImageId] = useState<string | null>(null);
 
   const capture = useCallback(async () => {
+    if (captureCooldown) {
+      console.warn("Capture cooldown active");
+      return;
+    }
+
+    setCaptureCooldown(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    console.log("Capturing Photo");
+    setStep(0);
     const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
       setCapturedImage(imageSrc);
 
       const filename = `${crypto.randomUUID()}.png`;
       const originalPath = `original/${filename}`;
+      const displayPath = `original_display/${filename}`;
 
       await uploadBase64ToSupabase(imageSrc, originalPath);
 
@@ -42,11 +59,27 @@ export default function Home() {
         return;
       }
 
-      setImageId(data[0].id);
+      const newImageId = data[0].id;
+      setImageId(newImageId);
+
+      // Add Watermark
+      const watermarked = await applyWatermark({
+        base64Image: imageSrc,
+      });
+
+      setWatermarkCapturedImage(watermarked);
+
+      await uploadBase64ToSupabase(watermarked, displayPath);
+      await supabase
+        .from("aipb_images")
+        .update({ original_display_image: displayPath })
+        .eq("id", newImageId);
+
       setStep(1);
       setAiImage("");
       setAccessories("");
     }
+    setCaptureCooldown(false);
   }, []);
 
   useEffect(() => {
@@ -63,15 +96,15 @@ export default function Home() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code.startsWith("Control")) {
+      if (event.code.startsWith("Control") && !captureCooldown) {
         event.preventDefault();
-        // capture();
+        capture();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [capture, capturedImage]);
+  }, [capture, capturedImage, captureCooldown]);
 
   function generatePrompt(tags: string): string {
     return `Enhance this real photograph by realistically adding ${tags} to the people in the image. Do not turn anyone into a cartoon or drawing. Keep all faces photorealistic, clearly visible, and unaltered. Do not change the background or lighting. Only add accessories or visual effects around the heads, shoulders, or bodies of each person, and ensure the composition remains in a 16:9 ratio. The image should retain its natural realism and original environment.`;
@@ -133,18 +166,30 @@ export default function Home() {
 
       const editedFilename = `${imageId}.png`;
       const editedPath = `edited/${editedFilename}`;
-
-      await uploadBase64ToSupabase(
-        `data:image/png;base64,${json.base64}`,
-        editedPath
-      );
+      const editedDisplayPath = `edited_display/${editedFilename}`;
+      const rawAiImage = `data:image/png;base64,${json.base64}`;
+      await uploadBase64ToSupabase(rawAiImage, editedPath);
 
       await supabase
         .from("aipb_images")
         .update({ edited_image: editedPath })
         .eq("id", imageId);
 
-      setAiImage(`data:image/png;base64,${json.base64}`);
+      setAiImage(rawAiImage);
+
+      // Add Watermark
+      const watermarked = await applyWatermark({
+        base64Image: rawAiImage,
+      });
+
+      setWatermarkAiImage(watermarked);
+      await uploadBase64ToSupabase(watermarked, editedDisplayPath);
+
+      await supabase
+        .from("aipb_images")
+        .update({ edited_display_image: editedDisplayPath })
+        .eq("id", imageId);
+
       setStep(2);
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -183,13 +228,18 @@ export default function Home() {
           videoConstraints={{ width: 1280, height: 720 }}
           className="mx-auto rounded-lg px-12 w-9xl"
         />
-        <Button onClick={capture} className="mt-4" variant={"destructive"}>
-          Capture Photo
+        <Button
+          onClick={capture}
+          className="mt-4"
+          variant={"destructive"}
+          disabled={captureCooldown}
+        >
+          {captureCooldown ? "Please wait..." : "Capture Photo"}
         </Button>
       </section>
 
       {/* STEP 2: Selection */}
-      {capturedImage && (
+      {capturedImage && watermarkCapturedImage && (
         <section
           ref={selectionRef}
           className="min-h-screen flex flex-col justify-center items-center"
@@ -199,12 +249,13 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-12 mx-auto">
             <img
-              src={capturedImage}
+              src={watermarkCapturedImage}
               alt="Captured"
               className="border max-w-full mx-auto"
             />
             <div className="flex flex-col items-center justify-center">
               <CostumeSelector
+                value={accessories}
                 onUpdatePrompt={(value) => setAccessories(value)}
                 disabled={isGenerating}
               />
@@ -224,7 +275,7 @@ export default function Home() {
       )}
 
       {/* STEP 3: Result */}
-      {aiImage && (
+      {aiImage && watermarkAiImage && (
         <section
           ref={resultRef}
           className="min-h-screen flex flex-col justify-center items-center text-center"
@@ -233,7 +284,7 @@ export default function Home() {
           <div className="flex items-center justify-center gap-12 p-12">
             <img
               alt="AI Edited Image"
-              src={aiImage}
+              src={watermarkAiImage}
               className="mx-auto border rounded aspect-video w-9xl object-contain"
             />
             <div className="flex flex-col items-center justify-center gap-4">

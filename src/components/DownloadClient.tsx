@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
 import StarRating from "@/components/StarRating";
+import { applyWatermark } from "@/lib/applyWatermark";
 
 export default function DownloadClient() {
   const searchParams = useSearchParams();
@@ -33,7 +34,7 @@ export default function DownloadClient() {
     const fetchImagePaths = async () => {
       const { data, error } = await supabase
         .from("aipb_images")
-        .select("original_image, edited_image")
+        .select("original_display_image, edited_display_image")
         .eq("id", imageId)
         .single();
 
@@ -43,8 +44,8 @@ export default function DownloadClient() {
         return;
       }
 
-      setOriginalUrl(`${bucketPath}/${data.original_image}`);
-      setEditedUrl(`${bucketPath}/${data.edited_image}`);
+      setOriginalUrl(`${bucketPath}/${data.original_display_image}`);
+      setEditedUrl(`${bucketPath}/${data.edited_display_image}`);
       setLoading(false);
     };
 
@@ -112,7 +113,7 @@ export default function DownloadClient() {
         Thanks for using <br />
         SYAI AI Photobooth!
       </h1>
-      <p className="text-muted-foreground max-w-xl mx-auto">
+      <p className="text-muted-foreground max-w-sm mx-auto">
         Enter your email to download your photos and optionally subscribe to our
         updates.
       </p>

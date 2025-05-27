@@ -152,3 +152,10 @@ body > * {
     transform: translateX(0%);
   }
 }
+
+@font-face {
+  font-family: "Frankfurter";
+  src: url("/fonts/Frankfurter-Medium.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}

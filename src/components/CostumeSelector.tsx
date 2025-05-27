@@ -1,48 +1,100 @@
-// CostumeSelector.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const SUGGESTIONS = [
+  // Headwear
   "Wizard Hat",
-  "Astronaut Helmet",
-  "Ninja",
-  "Pirate",
-  "Pilot",
-  "Cat Suit",
-  "Maid",
-  "Sparkles",
-  "Crown",
-
-  // New additions
-  "Flower Crown",
-  "Bunny Ears",
-  "Deer Antlers",
-  "Top Hat",
-  "Chef Hat",
+  "Pirate Hat",
   "Graduation Cap",
+  "Bunny Ears",
   "Sombrero",
-  "Sunglasses",
-  "Eye Patch",
-  "Bow Tie",
-  "Confetti Burst",
-  "Cape",
-  "Armor Chestplate",
-  "Butterfly Swarm",
+  "Chef Hat",
+  "Crown",
+  "Astronaut Helmet",
+  "Flower Crown",
+
+  // Auras & Visuals
   "Fire Aura",
   "Ice Aura",
   "Lightning Sparks",
   "Magical Glow",
   "Floating Emoji Hearts",
   "Bubble Effects",
-  "Rainbow Trail",
-  "Cyberpunk Glow",
-  "Nature Vines",
+  "Sparkles",
   "Disco Lights",
+  "Rainbow Trail",
+
+  // Costumes/Props
+  "Ninja",
+  "Cat Suit",
+  "Drip Fit",
+  "Bow Tie",
+  "Eye Patch",
+  "Pilot",
+  "Maid",
+  "Sunglasses",
+  "Lightsaber",
+  "Cape",
+  "Necklances",
+  "Vintage Clothes",
+  "Kimono Robe",
+  "Magic Wand",
+
+  // Wacky
+  "Deal With It Glasses",
+  "Shrek's Ears",
+  "Pikachu's Ears",
+  "Rubber Ducky",
+  "Hot Dog Suit",
+
+  // Modern
   "Gaming Headset",
+  "Hacker Hoodie",
+  "Cyberpunk Glow",
+  "AR Glasses",
+
+  // "Wizard Hat",
+  // "Astronaut Helmet",
+  // "Ninja",
+  // "Pirate",
+  // "Pilot",
+  // "Cat Suit",
+  // "Maid",
+  // "Sparkles",
+  // "Crown",
+
+  // // New additions
+  // "Flower Crown",
+  // "Bunny Ears",
+  // "Deer Antlers",
+  // "Top Hat",
+  // "Chef Hat",
+  // "Graduation Cap",
+  // "Sombrero",
+  // "Sunglasses",
+  // "Eye Patch",
+  // "Bow Tie",
+  // "Confetti Burst",
+  // "Cape",
+  // "Armor Chestplate",
+  // "Butterfly Swarm",
+  // "Fire Aura",
+  // "Ice Aura",
+  // "Lightning Sparks",
+  // "Magical Glow",
+  // "Floating Emoji Hearts",
+  // "Bubble Effects",
+  // "Rainbow Trail",
+  // "Cyberpunk Glow",
+  // "Nature Vines",
+  // "Disco Lights",
+  // "Gaming Headset",
+  // "Drip Out Clothes",
+  // "Lightsaber",
 ];
 
 const getRandomSelections = (count: number) => {
@@ -51,13 +103,25 @@ const getRandomSelections = (count: number) => {
 };
 
 type Props = {
+  value: string;
   onUpdatePrompt: (prompt: string) => void;
   disabled?: boolean;
 };
 
-export default function CostumeSelector({ onUpdatePrompt, disabled }: Props) {
+export default function CostumeSelector({
+  value,
+  onUpdatePrompt,
+  disabled,
+}: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [customPrompt, setCustomPrompt] = useState("");
+
+  useEffect(() => {
+    if (!value) {
+      setSelected([]);
+      setCustomPrompt("");
+    }
+  }, [value]);
 
   const toggleChip = (item: string) => {
     setSelected((prev) =>
@@ -119,9 +183,23 @@ export default function CostumeSelector({ onUpdatePrompt, disabled }: Props) {
         />
       </div>
 
-      <div className="text-right">
-        <Button variant="ghost" onClick={handleRandomize} disabled={disabled}>
+      <div className="flex items-center justify-end gap-4">
+        <Button
+          variant="secondary"
+          onClick={handleRandomize}
+          disabled={disabled}
+        >
           🎲 Randomize
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={() => {
+            setSelected([]);
+            onUpdatePrompt("");
+          }}
+          disabled={disabled}
+        >
+          🧼 Clear All
         </Button>
       </div>
     </div>
