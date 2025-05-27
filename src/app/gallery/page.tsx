@@ -25,7 +25,7 @@ export default function Gallery() {
   const getEditedImages = useCallback(async () => {
     const { data, error } = await supabase
       .from("aipb_images")
-      .select("edited_image")
+      .select("edited_display_image")
       .order("created_at", { ascending: false });
 
     if (error || !data) {
@@ -34,7 +34,7 @@ export default function Gallery() {
     }
 
     const validUrls = data
-      .map((d) => d.edited_image)
+      .map((d) => d.edited_display_image)
       .filter((url): url is string => !!url)
       .map((url) => `${supabaseImageURL}/${url}`);
 
