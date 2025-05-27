@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Image from "next/image";
 import StarRating from "@/components/StarRating";
-import { applyWatermark } from "@/lib/applyWatermark";
 
 export default function DownloadClient() {
   const searchParams = useSearchParams();
