@@ -172,7 +172,7 @@ export default function Home() {
 
       await supabase
         .from("aipb_images")
-        .update({ edited_image: editedPath })
+        .update({ edited_image: editedPath, prompt:  accessories })
         .eq("id", imageId);
 
       setAiImage(rawAiImage);
