@@ -31,7 +31,7 @@ const SUGGESTIONS = [
   // Costumes/Props
   "Ninja",
   "Cat Suit",
-  "Drip Fit",
+  "Dripped Out Clothes",
   "Bow Tie",
   "Eye Patch",
   "Pilot",
