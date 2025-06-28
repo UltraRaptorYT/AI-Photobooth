@@ -38,7 +38,10 @@ export default function Marquee({
         {[...images, ...images].map((src, index) => (
           <div
             key={`${moveTowards}-${index}`}
-            className={cn("flex-shrink-0 p-2", `w-[${marqueeImgSize}px]`)} // or use a fixed width
+            className={cn(
+              "flex-shrink-0 p-2",
+              `w-full max-w-[${marqueeImgSize}px]`
+            )} // or use a fixed width
           >
             <div className="aspect-[16/9] rounded-lg overflow-hidden shadow-lg">
               <Image
