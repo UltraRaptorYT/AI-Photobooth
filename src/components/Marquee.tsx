@@ -40,7 +40,7 @@ export default function Marquee({
             key={`${moveTowards}-${index}`}
             className={cn(
               "flex-shrink-0 p-2",
-              `w-[${marqueeImgSize}px] max-w-[${marqueeImgSize}px]`
+              `w-[${marqueeImgSize}px] min-w-[${marqueeImgSize}px] max-w-[${marqueeImgSize}px]`
             )} // or use a fixed width
           >
             <div className="aspect-[16/9] rounded-lg overflow-hidden shadow-lg">
