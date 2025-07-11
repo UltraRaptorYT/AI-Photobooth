@@ -22,6 +22,15 @@ export default function Gallery() {
   const [images, setImages] = useState<string[]>([]);
   const supabaseImageURL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/ai-pb`;
 
+  const checkUrlFetchable = async (url: string): Promise<boolean> => {
+    try {
+      const res = await fetch(url, { method: "HEAD" });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
   const getEditedImages = useCallback(async () => {
     const { data, error } = await supabase
       .from("aipb_images")
@@ -33,10 +42,15 @@ export default function Gallery() {
       return;
     }
 
-    const validUrls = data
+    const rawUrls = data
       .map((d) => d.edited_display_image)
       .filter((url): url is string => !!url)
       .map((url) => `${supabaseImageURL}/${url}`);
+
+    const fetchableUrls = await Promise.all(
+      rawUrls.map(async (url) => ((await checkUrlFetchable(url)) ? url : null))
+    );
+    const validUrls = fetchableUrls.filter((url): url is string => !!url);
 
     const latest = validUrls.slice(0, 6);
     const rest = validUrls.slice(6);
