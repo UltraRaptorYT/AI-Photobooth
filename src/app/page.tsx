@@ -221,6 +221,7 @@ export default function Home() {
     <div className="space-y-24">
       {/* STEP 1: Capture */}
       <section className="min-h-screen flex flex-col justify-center items-center text-center">
+        <h1 className="text-5xl font-bold pb-5 font-mono">SYAI AI Photobooth</h1>
         <Webcam
           audio={false}
           ref={webcamRef}
