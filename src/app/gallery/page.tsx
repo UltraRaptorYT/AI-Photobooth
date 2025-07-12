@@ -96,7 +96,7 @@ export default function Gallery() {
   }, [getEditedImages]);
 
   return (
-    <div className="grow w-full flex flex-col justify-around p-12 overflow-hidden max-h-screen gap-3">
+    <div className="grow w-full flex flex-col justify-around mb-6 p-12 overflow-hidden max-h-screen gap-3">
       <Marquee
         key={`marquee1-${images[0]}`}
         images={getMarqueeImages(images, 0)}
