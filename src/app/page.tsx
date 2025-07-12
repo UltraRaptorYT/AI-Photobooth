@@ -96,7 +96,11 @@ export default function Home() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code.startsWith("Control") && !captureCooldown) {
+      console.log(event.code);
+      if (
+        (event.code.startsWith("Control") || event.code == "ArrowUp") &&
+        !captureCooldown
+      ) {
         event.preventDefault();
         capture();
       }
@@ -172,7 +176,7 @@ export default function Home() {
 
       await supabase
         .from("aipb_images")
-        .update({ edited_image: editedPath, prompt:  accessories })
+        .update({ edited_image: editedPath, prompt: accessories })
         .eq("id", imageId);
 
       setAiImage(rawAiImage);
@@ -221,7 +225,9 @@ export default function Home() {
     <div className="space-y-24">
       {/* STEP 1: Capture */}
       <section className="min-h-screen flex flex-col justify-center items-center text-center">
-        <h1 className="text-5xl font-bold pb-5 font-mono">SYAI AI Photobooth</h1>
+        <h1 className="text-5xl font-bold pb-5 font-mono">
+          SYAI AI Photobooth
+        </h1>
         <Webcam
           audio={false}
           ref={webcamRef}
