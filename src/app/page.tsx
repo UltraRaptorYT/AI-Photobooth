@@ -162,16 +162,66 @@ export default function Home() {
         );
       }
 
-      const json = await response.json();
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response stream returned from generation.");
+      }
 
-      if (!json.base64) {
+      const decoder = new TextDecoder();
+      let pendingText = "";
+      let generatedBase64: string | null = null;
+
+      while (!generatedBase64) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        pendingText += decoder.decode(value, { stream: true });
+        const lines = pendingText.split("\n");
+        pendingText = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          const event = JSON.parse(line) as {
+            type?: string;
+            base64?: string;
+            error?: string;
+          };
+
+          if (event.type === "image" && event.base64) {
+            generatedBase64 = event.base64;
+            break;
+          }
+
+          if (event.type === "error") {
+            throw new Error(event.error || "AI generation failed.");
+          }
+        }
+      }
+
+      if (!generatedBase64 && pendingText.trim()) {
+        const event = JSON.parse(pendingText) as {
+          type?: string;
+          base64?: string;
+          error?: string;
+        };
+
+        if (event.type === "image" && event.base64) {
+          generatedBase64 = event.base64;
+        } else if (event.type === "error") {
+          throw new Error(event.error || "AI generation failed.");
+        }
+      }
+
+      if (!generatedBase64) {
         throw new Error("No base64 image returned from generation.");
       }
 
       const editedFilename = `${imageId}.png`;
       const editedPath = `edited/${editedFilename}`;
       const editedDisplayPath = `edited_display/${editedFilename}`;
-      const rawAiImage = `data:image/png;base64,${json.base64}`;
+      const rawAiImage = `data:image/png;base64,${generatedBase64}`;
       await uploadBase64ToSupabase(rawAiImage, editedPath);
 
       await supabase

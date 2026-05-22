@@ -1,6 +1,8 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { NextResponse } from "next/server";
-// import { Buffer } from "buffer";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -18,13 +20,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing data" }, { status: 400 });
     }
 
-    // const buffer = Buffer.from(base64Image, "base64");
-    // const blob = new Blob([buffer], { type: "image/png" });
-
-    // const file = await ai.files.upload({
-    //   file: blob,
-    // });
-
     const contents = [
       {
         role: "user",
@@ -40,30 +35,58 @@ export async function POST(req: Request) {
       },
     ];
 
-    const response = await ai.models.generateContentStream({
-      model: "gemini-2.5-flash-image",
-      // model: "gemini-2.0-flash-preview-image-generation",
-      config: {
-        responseModalities: [Modality.TEXT, Modality.IMAGE],
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (data: unknown) => {
+          controller.enqueue(encoder.encode(`${JSON.stringify(data)}\n`));
+        };
+
+        const keepAlive = setInterval(() => {
+          send({ type: "ping" });
+        }, 5000);
+
+        try {
+          send({ type: "start" });
+
+          const response = await ai.models.generateContentStream({
+            model: "gemini-2.5-flash-image",
+            config: {
+              responseModalities: [Modality.TEXT, Modality.IMAGE],
+            },
+            contents,
+          });
+
+          for await (const chunk of response) {
+            const parts = chunk?.candidates?.[0]?.content?.parts;
+            if (!parts) continue;
+
+            for (const part of parts) {
+              if (part.inlineData?.data) {
+                send({ type: "image", base64: part.inlineData.data });
+                return;
+              }
+            }
+          }
+
+          send({ type: "error", error: "No valid image response." });
+        } catch (error) {
+          console.error("Error in generate stream:", error);
+          send({ type: "error", error: "Internal server error." });
+        } finally {
+          clearInterval(keepAlive);
+          controller.close();
+        }
       },
-      contents: contents,
     });
 
-    for await (const chunk of response) {
-      const parts = chunk?.candidates?.[0]?.content?.parts;
-      if (!parts) continue;
-
-      for (const part of parts) {
-        if (part.inlineData) {
-          return NextResponse.json({ base64: part.inlineData.data });
-        }
-      }
-    }
-
-    return NextResponse.json(
-      { error: "No valid image response." },
-      { status: 500 }
-    );
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson",
+        "Cache-Control": "no-cache, no-transform",
+      },
+    });
   } catch (error) {
     console.error("Error in generate POST:", error);
     return NextResponse.json(
