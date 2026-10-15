@@ -281,6 +281,7 @@ export default function Home() {
         <Webcam
           audio={false}
           ref={webcamRef}
+          mirrored
           screenshotFormat="image/png"
           videoConstraints={{ width: 1280, height: 720 }}
           className="mx-auto rounded-lg px-12 w-9xl"
